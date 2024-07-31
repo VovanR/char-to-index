@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Char to Index</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-size: 200%;
+      }
+      .form-row {
+        margin-bottom: 0.15em;
+      }
+      button,
+      select,
+      input {
+        font: inherit;
+      }
+      .alphabet-chars {
+        letter-spacing: 0.1em;
+        counter-reset: section;
+        button {
+          display: inline-block;
+          width: 1.2em;
+          text-align: center;
+          padding: 0 0.1em;
+          cursor: default;
+          font-optical-sizing: auto;
+          &::after {
+            display: block;
+            content: counter(section);
+            counter-increment: section;
+            font-size: 0.45em;
+            letter-spacing: 0;
+            opacity: 0.75;
+            text-align: center;
+            font-variant-numeric: normal;
+          }
+        }
+      }
+      .alphabet-active-char {
+        background-color: aquamarine;
+        outline: 0.1em solid aquamarine;
+        border-radius: 0.15em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <form action="">
+        <div class="form-row">
+          <input type="text" name="text" />
+        </div>
+        <div class="form-row">
+          <input type="text" name="digits" />
+        </div>
+        <div class="form-row">
+          <select name="alphabet" value="en"></select>
+          <div id="alphabet-chars" class="alphabet-chars"></div>
+        </div>
+      </form>
+    </main>
+
+    <script>
+      const form = document.forms[0];
+      const charsInput = form.elements.text;
+      const indexesInput = form.elements.digits;
+      const alphabetSelector = form.elements.alphabet;
+      const alphabetChars = form.querySelector("#alphabet-chars");
+
+      const ALPHABET_MAP = {
+        en: "abcdefghijklmnopqrstuvwxyz",
+        ru: "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+      };
+
+      for (const lang of Object.keys(ALPHABET_MAP)) {
+        const option = document.createElement("option");
+        option.innerText = lang;
+        option.value = lang;
+        alphabetSelector.append(option);
+      }
+
+      charsInput.addEventListener("input", () => {
+        updateByChars();
+      });
+      indexesInput.addEventListener("input", () => {
+        updateByIndexes();
+      });
+      alphabetSelector.addEventListener("input", () => {
+        renderActiveAlphabet();
+        updateByChars();
+      });
+
+      function updateByChars() {
+        const result = [];
+        for (const char of Array.from(charsInput.value)) {
+          const index = getActiveAlphabetCharsArray().indexOf(char) + 1;
+          result.push(index);
+          alphabetChars
+            .querySelector(`span:nth-child(${index})`)
+            ?.classList.add("alphabet-active-char");
+        }
+        alphabetChars.childNodes.forEach((element, index) => {
+          if (result.includes(index + 1)) {
+            element.classList.add("alphabet-active-char");
+          } else {
+            element.classList.remove("alphabet-active-char");
+          }
+        });
+        indexesInput.value = result.join(" ");
+      }
+      function updateByIndexes() {
+        const result = [];
+        const indexes = indexesInput.value.replace(/\D/g, "_").split("_").map((index) => parseInt(index, 10));
+        const chars = getActiveAlphabetCharsArray();
+        for (const index of indexes) {
+          result.push(chars[index - 1]);
+        }
+        charsInput.value = result.join("");
+        let needLastSpace = false;
+        const lastChar = indexesInput.value.at(-1);
+        if (lastChar !== undefined && !/\d/.test(lastChar)) {
+          needLastSpace = true;
+        }
+        updateByChars();
+        if (needLastSpace) {
+          indexesInput.value += lastChar;
+        }
+      }
+      function getActiveAlphabetCharsArray() {
+        return Array.from(ALPHABET_MAP[alphabetSelector.value]);
+      }
+      function renderActiveAlphabet() {
+        const elements = document.createDocumentFragment();
+        for (const char of getActiveAlphabetCharsArray()) {
+          const element = document.createElement("button");
+          element.setAttribute("type", "button")
+          element.innerText = char;
+          elements.append(element);
+        }
+        alphabetChars.innerHTML = "";
+        alphabetChars.append(elements);
+      }
+
+      renderActiveAlphabet();
+      updateByChars();
+    </script>
+  </body>
+</html>
