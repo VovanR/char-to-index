@@ -46,11 +46,19 @@
         outline: 0.1em solid aquamarine;
         border-radius: 0.15em;
       }
+      label {
+        span {
+          font-size: 0.5em;
+        }
+      }
+      summary {
+        cursor: default;
+      }
     </style>
   </head>
   <body>
     <main>
-      <form action="">
+      <form name="main" action="">
         <div class="form-row">
           <input type="text" name="text" />
         </div>
@@ -59,29 +67,75 @@
         </div>
         <div class="form-row">
           <select name="alphabet" value="en"></select>
+          <button name="delete_active_alphabet" type="button">&times;</button>
           <div id="alphabet-chars" class="alphabet-chars"></div>
         </div>
       </form>
+      <details>
+        <summary>Add custom alphabet</summary>
+        <form name="add_alphabet" action="">
+          <div class="form-row">
+            <label>
+              <span>Name</span>
+              <input name="alphabet_name" type="text" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              <span>Alphabet</span>
+              <input name="alphabet_value" type="text" />
+            </label>
+          </div>
+          <footer>
+            <button type="submit">Add</button>
+          </footer>
+        </form>
+      </details>
     </main>
 
     <script>
-      const form = document.forms[0];
+      const form = document.forms.main;
       const charsInput = form.elements.text;
       const indexesInput = form.elements.digits;
       const alphabetSelector = form.elements.alphabet;
+      const deleteActiveAlphabetButton = form.elements.delete_active_alphabet;
       const alphabetChars = form.querySelector("#alphabet-chars");
 
       const ALPHABET_MAP = {
         en: "abcdefghijklmnopqrstuvwxyz",
         ru: "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
       };
-
-      for (const lang of Object.keys(ALPHABET_MAP)) {
-        const option = document.createElement("option");
-        option.innerText = lang;
-        option.value = lang;
-        alphabetSelector.append(option);
+      
+      
+      
+      function initializeAddCustomAlphabetForm() {
+        const form = document.forms.add_alphabet;
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const name = form.alphabet_name.value;
+          const value = form.alphabet_value.value;
+          if (Object.hasOwn(ALPHABET_MAP, name) && !confirm("Rewrite existed alphabet?")) {
+            return;
+          }
+          ALPHABET_MAP[name] = value;
+          form.reset();
+          renderAlphabetSelector();
+          alphabetSelector.value = name;
+          alphabetSelector.dispatchEvent(new CustomEvent("input"));
+        });
       }
+      initializeAddCustomAlphabetForm();
+
+      function renderAlphabetSelector() {
+        alphabetSelector.innerHTML = "";
+        for (const lang of Object.keys(ALPHABET_MAP)) {
+          const option = document.createElement("option");
+          option.innerText = lang;
+          option.value = lang;
+          alphabetSelector.append(option);
+        }
+      }
+      renderAlphabetSelector();
 
       charsInput.addEventListener("input", () => {
         updateByChars();
@@ -92,6 +146,17 @@
       alphabetSelector.addEventListener("input", () => {
         renderActiveAlphabet();
         updateByChars();
+      });
+      deleteActiveAlphabetButton.addEventListener("click", () => {
+        const current = alphabetSelector.value;
+        if (!Object.hasOwn(ALPHABET_MAP, current) || !confirm("Delete active alphabet?")) {
+          return;
+        }
+        delete ALPHABET_MAP[current];
+        const nextActive = Object.keys(ALPHABET_MAP)[0] ?? "";
+        alphabetSelector.value = nextActive;
+        renderAlphabetSelector();
+        alphabetSelector.dispatchEvent(new CustomEvent("input"));
       });
 
       function updateByChars() {
@@ -131,7 +196,7 @@
         }
       }
       function getActiveAlphabetCharsArray() {
-        return Array.from(ALPHABET_MAP[alphabetSelector.value]);
+        return Array.from(ALPHABET_MAP[alphabetSelector.value] ?? "");
       }
       function renderActiveAlphabet() {
         const elements = document.createDocumentFragment();
